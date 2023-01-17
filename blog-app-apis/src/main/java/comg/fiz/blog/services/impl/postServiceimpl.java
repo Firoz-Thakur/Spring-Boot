@@ -2,19 +2,23 @@ package comg.fiz.blog.services.impl;
 
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
+import org.modelmapper.internal.bytebuddy.asm.Advice.OffsetMapping.Sort;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import ch.qos.logback.core.joran.conditional.ElseAction;
 import comg.fiz.blog.entities.Category;
 import comg.fiz.blog.entities.Post;
 import comg.fiz.blog.entities.User;
 import comg.fiz.blog.exceptions.ResourceNotFoundException;
+import comg.fiz.blog.exceptions.StringResourceNotFoundException;
 import comg.fiz.blog.payloads.PostDto;
 import comg.fiz.blog.payloads.PostResponse;
 import comg.fiz.blog.repositories.CategoryRepo;
@@ -71,12 +75,18 @@ public class postServiceimpl implements PostService {
 	public void deletePost(Integer postId) {
 		// TODO Auto-generated method stub
 		Post post=this.postRepo.findById(postId).orElseThrow(()-> new ResourceNotFoundException("Post","post id",postId));
-		this.postRepo.delete(post);  		
+		this.postRepo.delete(post);  	
 	}
 
 	@Override
-	public PostResponse getAllpost(Integer pageNumber, Integer pageSize) {
-		Pageable page = PageRequest.of(pageNumber, pageSize);
+	public PostResponse getAllpost(Integer pageNumber, Integer pageSize,String sortBy,String SortDir) {
+		
+		Pageable page;
+		if(SortDir.equals("asc"))
+			 page = PageRequest.of(pageNumber, pageSize,org.springframework.data.domain.Sort.by(sortBy).ascending());
+		else 
+		    page = PageRequest.of(pageNumber, pageSize,org.springframework.data.domain.Sort.by(sortBy).descending());
+	
 		Page<Post> pagePost = this.postRepo.findAll(page);
 		List<Post>posts=pagePost.getContent();
 		List<PostDto> postDtos = posts.stream().map(post ->this.modelMapper.map(post, PostDto.class)).collect(Collectors.toList());
@@ -118,8 +128,13 @@ public class postServiceimpl implements PostService {
 	@Override
 	public List<PostDto> searchPosts(String keyword) {
 		// TODO Auto-generated method stub
-		return null;
-	}
-	
+		
+		List<Post>posts = this.postRepo.findAll();
+		List<PostDto>postDtos = posts.stream().filter(post->post.getTitle().contains(keyword)).map(post->this.modelMapper.map(post, PostDto.class)).collect(Collectors.toList());
+	    if(postDtos.isEmpty())
+	    	throw new StringResourceNotFoundException("Post","PostKeyword : ",keyword);
+	    return postDtos;
+	    
+	}	
 	
 }

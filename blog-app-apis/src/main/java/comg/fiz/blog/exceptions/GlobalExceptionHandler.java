@@ -16,8 +16,8 @@ import comg.fiz.blog.payloads.ApiResponse;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-	@ExceptionHandler(ResourceNotFoundException.class)
-	public ResponseEntity<ApiResponse> resourceNotFoundExceptionHandler(ResourceNotFoundException ex)
+	@ExceptionHandler({ResourceNotFoundException.class,StringResourceNotFoundException.class})
+	public ResponseEntity<ApiResponse> resourceNotFoundExceptionHandler(Exception ex)
 	{
 		
 		String messString= ex.getMessage();
